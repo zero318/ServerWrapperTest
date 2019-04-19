@@ -28,36 +28,4 @@ namespace SuccExceptions
         {
         }
     }
-    public class SaveStopException : Exception
-    {
-        public SaveStopException()
-        {
-        }
-
-        public SaveStopException(string message)
-            : base(message)
-        {
-        }
-
-        public SaveStopException(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
-    }
-    public class MinecraftInput : Exception
-    {
-        public MinecraftInput()
-        {
-        }
-
-        public MinecraftInput(string message)
-            : base(message)
-        {
-        }
-
-        public MinecraftInput(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
-    }
 }

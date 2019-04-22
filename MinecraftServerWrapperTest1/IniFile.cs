@@ -1,9 +1,17 @@
-﻿using System.IO;
+﻿
+/*=======================================
+
+This class reads/writes INI files.
+
+I found it on the internet. XD
+
+=======================================*/
+
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// Change this to match your program's normal namespace
 namespace Ini
 {
     class IniFile   // revision 11

@@ -60,6 +60,7 @@ namespace ServerWrapperTest
                 DefaultSettings.Write("Type", "-d64 -server", "Java");
                 DefaultSettings.Write("MemMax", "2G", "Java");
                 DefaultSettings.Write("MemMin", "1G", "Java");
+                DefaultSettings.Write("LogConfigFile","log4j2.xml","Java");
                 DefaultSettings.Write("Arguments", "-XX:+UseConcMarkSweepGC -XX:+DisableExplicitGC -XX:+UseAdaptiveGCBoundary -XX:MaxGCPauseMillis=500 -XX:-UseGCOverheadLimit -XX:SurvivorRatio=12 -XX:NewRatio=4 -Xnoclassgc -XX:UseSSE=3", "Java");
             }
 

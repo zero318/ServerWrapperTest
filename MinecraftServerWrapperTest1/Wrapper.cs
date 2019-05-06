@@ -41,7 +41,7 @@ namespace ServerWrapperTest
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[Wrapper] ", ConsoleColor.Cyan);
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[Wrapper Error] ", ConsoleColor.DarkCyan);
 
-        public static readonly string Version = "0.4";
+        public static readonly string Version = "0.5";
         private static bool Run;
         public static Modes Mode;
         public static Modes InputTarget;

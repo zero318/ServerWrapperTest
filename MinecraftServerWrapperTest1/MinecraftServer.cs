@@ -1,9 +1,10 @@
 ﻿using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.IO;
+using System.Reflection;
 using System.Diagnostics;
 using Ini;
 using SuccExceptions;
@@ -22,6 +23,8 @@ namespace ServerWrapperTest
         private static bool Stopping;
         private static string PIDFile;
 
+        public static string RootPath;
+
         //I moved this up here since I was having errors accessing it in subroutines.
         //I'm not sure what the proper way of doing it is, but this'll work.
         public static StreamWriter Input;
@@ -38,7 +41,7 @@ namespace ServerWrapperTest
             Console.ForegroundColor = ConsoleColor.Cyan;
             Wrapper.InputTarget = Wrapper.Modes.Menu;
 
-            Wrapper.WriteLine("Starting Minecraft server...");
+            Wrapper.WriteLine("Preparing Minecraft server...");
             string SettingsFileName = "Settings.ini";
             string SettingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
 
@@ -48,43 +51,147 @@ namespace ServerWrapperTest
             =======================================*/
             if (!File.Exists(SettingsFilePath))
             {
-                IniFile DefaultSettings = new IniFile(SettingsFileName);
-                DefaultSettings.Write("Version", "1.14-pre5", "Minecraft");
-                DefaultSettings.Write("Arguments", "nogui", "Minecraft");
-                DefaultSettings.Write("Enable", "false", "Fabric");
-                DefaultSettings.Write("Version", "0.4.0+build.121", "Fabric");
-                DefaultSettings.Write("CommandLogFile", "CommandLog.txt", "Wrapper");
-                DefaultSettings.Write("ServerPIDFile", "ServerPID", "Wrapper");
-                DefaultSettings.Write("Folder", @"E:\My_Minecraft_Expansion_2\Local Server", "Windows");
-                DefaultSettings.Write("Executable", "java", "Java");
-                DefaultSettings.Write("Type", "-d64 -server", "Java");
-                DefaultSettings.Write("MemMax", "2G", "Java");
-                DefaultSettings.Write("MemMin", "1G", "Java");
-                DefaultSettings.Write("LogConfigFile","log4j2.xml","Java");
-                DefaultSettings.Write("Arguments", "-XX:+UseConcMarkSweepGC -XX:+DisableExplicitGC -XX:+UseAdaptiveGCBoundary -XX:MaxGCPauseMillis=500 -XX:-UseGCOverheadLimit -XX:SurvivorRatio=12 -XX:NewRatio=4 -Xnoclassgc -XX:UseSSE=3", "Java");
+                //ds = DefaultSettings
+                IniFile ds = new IniFile(SettingsFileName);
+                ds.Write("Version", "1.14", "Minecraft");
+                ds.Write("Arguments", "nogui", "Minecraft");
+                ds.Write("WorldSelectFile", "w.ini", "Minecraft");
+                ds.Write("Enable", "false", "Fabric");
+                ds.Write("Version", "0.4.0+build.121", "Fabric");
+                ds.Write("CommandLogFile", "CommandLog.txt", "Wrapper");
+                ds.Write("ServerPIDFile", "ServerPID", "Wrapper");
+                ds.Write("ServerFolder", @"E:\My_Minecraft_Expansion_2\Local Server", "Windows");
+                ds.Write("Executable", "java", "Java");
+                ds.Write("Type", "-d64 -server", "Java");
+                ds.Write("MemMax", "4G", "Java");
+                ds.Write("MemMin", "4G", "Java");
+                ds.Write("LogConfigFile", "log4j2.xml", "Java");
+                ds.Write("Arguments", "-XX:+UseConcMarkSweepGC -XX:+DisableExplicitGC -XX:+UseAdaptiveGCBoundary -XX:MaxGCPauseMillis=500 -XX:-UseGCOverheadLimit -XX:SurvivorRatio=12 -XX:NewRatio=4 -Xnoclassgc -XX:UseSSE=3", "Java");
             }
 
             /*=======================================
-            Read the settings file and build a huge string with it
+            Read the settings file to find the server path
             =======================================*/
+            Wrapper.WriteLine("Reading wrapper settings file...");
             IniFile s = new IniFile(SettingsFileName);
             Console.Title = "Wrapper." + Wrapper.Version + " MinecraftServer." + s.Read("Version", "Minecraft");
-            string ServerPath = s.Read("Folder", "Windows") + '\\';
+            RootPath = s.Read("ServerFolder", "Windows") + '\\';
+
+            //Automatically accept the EULA because screw that
+            File.WriteAllText(RootPath + "eula.txt", "eula=TRUE");
+
+            /*=======================================
+            Build a huge string of startup arguments from the settings file
+            =======================================*/
             string MinecraftJar = "minecraft_server." + s.Read("Version", "Minecraft") + ".jar";
             string ArgumentsString = "-Xmx" + s.Read("MemMax", "Java") + " -Xms" + s.Read("MemMin", "Java") +
                                         " " + s.Read("Type", "Java") + " " + s.Read("Arguments", "Java") +
-                                        " -jar \"" + ServerPath;
+                                        " -jar \"" + RootPath;
             if (Convert.ToBoolean(s.Read("Enable", "Fabric")))
             {
                 Console.Title = Console.Title + " FabricLoader." + s.Read("Version", "Fabric");
                 string FabricJar = "fabric-loader-" + s.Read("Version", "Fabric") + ".jar";
-                ArgumentsString += FabricJar + "\" \"" + ServerPath;
-                File.WriteAllText(ServerPath + "fabric-server-launcher.properties", "serverJar=" + MinecraftJar);
+                ArgumentsString += FabricJar + "\" \"" + RootPath;
+                File.WriteAllText(RootPath + "fabric-server-launcher.properties", "serverJar=" + MinecraftJar);
             }
-            ArgumentsString += MinecraftJar + "\" " + s.Read("Arguments", "Minecraft");
 
-            MinecraftServer.CommandLog = new StreamWriter(ServerPath + s.Read("CommandLogFile","Wrapper"), true);
-            PIDFile = ServerPath + s.Read("ServerPIDFile", "Wrapper");
+
+            /*=======================================
+            Read the world select file and add stuff
+            from that to the end of the arguments string
+            =======================================*/
+            Wrapper.WriteLine("Configuring universe...");
+            string WorldSelectFilePath = RootPath + s.Read("WorldSelectFile","Minecraft");
+            if (!File.Exists(WorldSelectFilePath))
+            {
+                //dw = DefaultWorld
+                IniFile dw = new IniFile(WorldSelectFilePath);
+                dw.Write("Selected", "_default", "Universe");
+                dw.Write("Selected", "world", "World");
+                dw.Write("UniversesFolder", "universes", "Windows");
+                dw.Write("RelativePath", "true", "Windows");
+            }
+
+            IniFile w = new IniFile(WorldSelectFilePath);
+            
+            //The folder path is processed this way since Minecraft prefers a relative path,
+            //but the wrapper still needs to access the folder name itself with an absolute path.
+            string UniversesFolder = w.Read("UniversesFolderName", "Windows");
+            if (Convert.ToBoolean(w.Read("RelativePath", "Windows")))
+            {
+                UniversesFolder = ".\\" + UniversesFolder;
+            }
+            if (!UniversesFolder.EndsWith(@"\"))
+            {
+                UniversesFolder += @"\";
+            }
+
+            ArgumentsString += MinecraftJar + "\" " + s.Read("Arguments", "Minecraft") +
+                                                " --universe " + UniversesFolder + w.Read("Selected", "Universe") +
+                                                " --world " + w.Read("Selected", "World");
+
+            /*=======================================
+            Set up server.properties
+            =======================================*/
+            Wrapper.WriteLine("Configuring server.properties...");
+            Dictionary<string, string> ServerProperties = new Dictionary<string, string>();
+
+            //This is just here in case a property manages to
+            //not get specified in any other properties file.
+            Util.MergeDictionaryWithStream(ServerProperties, "BeeMovieHentai", "ServerWrapperTest.default_server.properties");
+
+            //Loads the defaults for the whole server.
+            Util.MergeDictionaryWithStream(ServerProperties, RootPath + s.Read("GlobalServerPropertiesFile", "Minecraft"));
+
+            //Configures the generic template for 
+            string UniversePath = RootPath + w.Read("UniversesFolderName", "Windows") + "\\" + w.Read("Selected", "Universe") + "\\";
+            Util.MergeDictionaryWithStream(ServerProperties, UniversePath + "universe.properties");
+
+            //Update the MotD to show what universe/world is loaded
+            ServerProperties["motd"] += " | " + w.Read("Selected", "World");
+
+            //Check for a world properties file and load that too if it exists
+            string WorldPath = UniversePath + w.Read("Selected", "World") + "\\";
+            Util.MergeDictionaryWithStream(ServerProperties, WorldPath + "world.properties");
+
+            ServerProperties["level-name"] = w.Read("Selected", "World");
+
+            File.WriteAllLines(RootPath + "server.properties", Util.JoinDictionaryAsArray(ServerProperties, '='));
+
+            /*=======================================
+            Set the server icon
+            =======================================*/
+            Wrapper.WriteLine("Setting server icon...");
+
+            //These pragma statements whats-its just make Visual Studio shut up
+            //about these if statements being empty. I did that on purpose as a way
+            //of short circuiting the logic involved.
+            #pragma warning disable CS0642
+            if (Util.SetIcon(WorldPath + "server-icon.png")) ;
+            else if (Util.SetIcon(UniversePath + "server-icon.png")) ;
+            else if (Util.SetIcon(RootPath + "global-icon.png")) ;
+            else if (Util.CompareDefaultIcon(RootPath + "server-icon.png")) ;
+            #pragma warning restore CS0642
+            else
+            {
+                using (Stream DefaultIconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ServerWrapperTest.default-icon.png"))
+                {
+                    byte[] ByteBuffer = new byte[DefaultIconStream.Length];
+                    using (MemoryStream memoryStream = new MemoryStream(ByteBuffer))
+                    {
+                        DefaultIconStream.CopyTo(memoryStream);
+                        File.WriteAllBytes(RootPath + "server-icon.png", memoryStream.ToArray());
+                    }
+                }
+            }
+
+            /*=======================================
+            Setup some files related to logs and crap
+            =======================================*/
+            Wrapper.WriteLine("Configuring custom logging...");
+            MinecraftServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
+            Wrapper.WriteLine("Checking for previous unstopped servers...");
+            PIDFile = RootPath + s.Read("ServerPIDFile", "Wrapper");
             if (File.Exists(PIDFile))
             {
                 Int32 PreviousPID = Int32.Parse(File.ReadAllText(PIDFile));
@@ -97,11 +204,11 @@ namespace ServerWrapperTest
                         //Make sure the server process has stopped
                         while (PreviousServer.HasExited == false) ;
                     }
-                    Wrapper.WriteLine("Previous server stopped successfully!");
+                    Wrapper.WriteLine("Previous server stopped successfully");
                 }
                 catch (Exception)
                 {
-                    Wrapper.ErrorWriteLine("Server process not running!");
+                    Wrapper.WriteLine("No previous server process running");
                 }
                 File.Delete(PIDFile);
             }
@@ -109,23 +216,25 @@ namespace ServerWrapperTest
             /*=======================================
             Configure the server process before starting it
             =======================================*/
+            Wrapper.WriteLine("Configuring server process...");
             MinecraftServer.Process = new Process();
             MinecraftServer.Process.StartInfo.FileName = s.Read("Executable", "Java");
             MinecraftServer.Process.StartInfo.Arguments = ArgumentsString;
             MinecraftServer.Process.StartInfo.CreateNoWindow = false;
-            MinecraftServer.Process.StartInfo.WorkingDirectory = ServerPath;
+            MinecraftServer.Process.StartInfo.WorkingDirectory = RootPath;
             MinecraftServer.Process.StartInfo.ErrorDialog = false;
             MinecraftServer.Process.StartInfo.UseShellExecute = false;
             MinecraftServer.Process.StartInfo.RedirectStandardError = true;
             MinecraftServer.Process.StartInfo.RedirectStandardOutput = true;
             MinecraftServer.Process.StartInfo.RedirectStandardInput = true;
-            
+
 
             /*=======================================
             These are what read/print/process the server log.
             They'll be run whenever the server process outputs text,
             even while the code continues running below.
             =======================================*/
+            Wrapper.WriteLine("Configuring console output...");
             MinecraftServer.Process.OutputDataReceived += new DataReceivedEventHandler
             (
                 (sender, OutputText) =>
@@ -163,6 +272,7 @@ namespace ServerWrapperTest
             /*=======================================
             Finally start the dang server process
             =======================================*/
+            Wrapper.WriteLine("Starting Minecraft server...");
             MinecraftServer.Process.Start();
 
             File.WriteAllText(PIDFile,MinecraftServer.Process.Id.ToString());
@@ -214,6 +324,10 @@ namespace ServerWrapperTest
                                 else if (ConsoleInput == "stop")
                                 {
                                     MinecraftServer.StopRoutine();
+                                }
+                                else if (ConsoleInput == "stop-no-save")
+                                {
+                                    MinecraftServer.StopRoutine(false);
                                 }
                                 //Send it to the Minecraft server
                                 else
@@ -267,13 +381,16 @@ namespace ServerWrapperTest
         /*=======================================
         Saves the world and stops the server
         =======================================*/
-        public static void StopRoutine()
+        public static void StopRoutine(bool SaveBeforeStopping = true)
         {
             MinecraftServer.Run = false;
             MinecraftServer.Stopping = true;
-            MinecraftServer.Input.WriteLine("save-all");
-            //Wait for the save to finish
-            while (MinecraftServer.Loaded == true) ;
+            if (SaveBeforeStopping)
+            {
+                MinecraftServer.Input.WriteLine("save-all");
+                //Wait for the save to finish
+                while (MinecraftServer.Loaded == true) ;
+            }
             MinecraftServer.Input.WriteLine("stop");
             //Make sure the server process has stopped
             while (MinecraftServer.Process.HasExited == false) ;

@@ -18,6 +18,7 @@ namespace ServerWrapperTest
         public static readonly char[] RightBracketSplitter = { ']' };
         public static readonly char[] SpaceSplitter = { ' ' };
         public static readonly char[] EqualsSplitter = { '=' };
+        public static readonly char[] AsteriskSplitter = { '*' };
 
         private const int BYTES_TO_READ = sizeof(Int64);
 
@@ -72,6 +73,22 @@ namespace ServerWrapperTest
                     Util.WriteToLog("Switching to Minecraft mode.", Wrapper.OutputFormat);
                     Console.ForegroundColor = MinecraftServer.OutputFormat.Color;
                     break;
+                case Wrapper.Modes.FactorioServer:
+                    Util.WriteToLog("Switching to Factorio mode.", Wrapper.OutputFormat);
+                    Console.ForegroundColor = FactorioServer.OutputFormat.Color;
+                    break;
+                //case Wrapper.Modes.MinecraftFactorioBridge:
+                //    Util.WriteToLog("Switching to Bridge mode.", Wrapper.OutputFormat);
+                //    Console.ForegroundColor = MinecraftFactorioBridge.OutputFormat.Color;
+                //    break;
+                case Wrapper.Modes.UnturnedServer:
+                    Util.WriteToLog("Switching to Unturned mode.", Wrapper.OutputFormat);
+                    Console.ForegroundColor = UnturnedServer.OutputFormat.Color;
+                    break;
+                //case Wrapper.Modes.SRB2KServer:
+                //    Util.WriteToLog("Switching to SRB2K mode.", Wrapper.OutputFormat);
+                //    Console.ForegroundColor = SRB2KServer.OutputFormat.Color;
+                //    break;
             }
         }
 

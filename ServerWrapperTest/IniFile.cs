@@ -37,6 +37,13 @@ namespace Ini
             return RetVal.ToString();
         }
 
+        public string BigRead(string Key, string Section = null)
+        {
+            var RetVal = new StringBuilder(511);
+            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 511, Path);
+            return RetVal.ToString();
+        }
+
         public void Write(string Key, string Value, string Section = null)
         {
             WritePrivateProfileString(Section ?? EXE, Key, Value, Path);

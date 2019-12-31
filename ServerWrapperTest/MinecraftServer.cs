@@ -18,12 +18,14 @@ namespace ServerWrapperTest
 
         private static Process Process;
 
-        private static bool Run;
+        public static bool Running = false;
         private static bool Loaded;
         private static bool Stopping;
         private static string PIDFile;
 
         public static string RootPath;
+        public static string UniversePath;
+        public static string WorldPath;
 
         //I moved this up here since I was having errors accessing it in subroutines.
         //I'm not sure what the proper way of doing it is, but this'll work.
@@ -34,7 +36,7 @@ namespace ServerWrapperTest
         This subroutine starts up the server
         and then monitors the output.
         =======================================*/
-        public static void RunMinecraftServer()
+        public static void Run()
         {
             MinecraftServer.Loaded = false;
             MinecraftServer.Stopping = false;
@@ -53,7 +55,7 @@ namespace ServerWrapperTest
             {
                 //ds = DefaultSettings
                 IniFile ds = new IniFile(SettingsFileName);
-                ds.Write("Version", "1.14", "Minecraft");
+                ds.Write("Version", "1.15.1", "Minecraft");
                 ds.Write("Arguments", "nogui", "Minecraft");
                 ds.Write("WorldSelectFile", "w.ini", "Minecraft");
                 ds.Write("Enable", "false", "Fabric");
@@ -83,14 +85,16 @@ namespace ServerWrapperTest
             /*=======================================
             Build a huge string of startup arguments from the settings file
             =======================================*/
-            string MinecraftJar = "minecraft_server." + s.Read("Version", "Minecraft") + ".jar";
+            //string MinecraftJar = "minecraft_server." + s.Read("Version", "Minecraft") + ".jar";
+            string MinecraftJar = s.Read("JarName", "Minecraft");
             string ArgumentsString = "-Xmx" + s.Read("MemMax", "Java") + " -Xms" + s.Read("MemMin", "Java") +
-                                        " " + s.Read("Type", "Java") + " " + s.Read("Arguments", "Java") +
+                                        " " + s.Read("Type", "Java") + " " + s.BigRead("Arguments", "Java") +
                                         " -jar \"" + RootPath;
             if (Convert.ToBoolean(s.Read("Enable", "Fabric")))
             {
                 Console.Title = Console.Title + " FabricLoader." + s.Read("Version", "Fabric");
-                string FabricJar = "fabric-loader-" + s.Read("Version", "Fabric") + ".jar";
+                //string FabricJar = "fabric-loader-" + s.Read("Version", "Fabric") + ".jar";
+                string FabricJar = s.Read("FabricJarName", "Fabric");
                 ArgumentsString += FabricJar + "\" \"" + RootPath;
                 File.WriteAllText(RootPath + "fabric-server-launcher.properties", "serverJar=" + MinecraftJar);
             }
@@ -144,14 +148,14 @@ namespace ServerWrapperTest
             Util.MergeDictionaryWithStream(ServerProperties, RootPath + s.Read("GlobalServerPropertiesFile", "Minecraft"));
 
             //Configures the generic template for 
-            string UniversePath = RootPath + w.Read("UniversesFolderName", "Windows") + "\\" + w.Read("Selected", "Universe") + "\\";
+            UniversePath = RootPath + w.Read("UniversesFolderName", "Windows") + "\\" + w.Read("Selected", "Universe") + "\\";
             Util.MergeDictionaryWithStream(ServerProperties, UniversePath + "universe.properties");
 
             //Update the MotD to show what universe/world is loaded
             ServerProperties["motd"] += " | " + w.Read("Selected", "World");
 
             //Check for a world properties file and load that too if it exists
-            string WorldPath = UniversePath + w.Read("Selected", "World") + "\\";
+            WorldPath = UniversePath + w.Read("Selected", "World") + "\\";
             Util.MergeDictionaryWithStream(ServerProperties, WorldPath + "world.properties");
 
             ServerProperties["level-name"] = w.Read("Selected", "World");
@@ -191,7 +195,7 @@ namespace ServerWrapperTest
             Wrapper.WriteLine("Configuring custom logging...");
             MinecraftServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
             Wrapper.WriteLine("Checking for previous unstopped servers...");
-            PIDFile = RootPath + s.Read("ServerPIDFile", "Wrapper");
+            PIDFile = RootPath + s.Read("PIDFile", "Minecraft");
             if (File.Exists(PIDFile))
             {
                 Int32 PreviousPID = Int32.Parse(File.ReadAllText(PIDFile));
@@ -247,11 +251,11 @@ namespace ServerWrapperTest
                         {
                             MinecraftServer.Loaded = !OutputText.Data.Contains("[Server thread/INFO]: Saved the game");
                         }
-                        else if (MinecraftServer.Loaded)
-                        {
-                            ProcessLog(OutputText.Data.Split(Util.RightBracketSplitter, StringSplitOptions.RemoveEmptyEntries));
-                        }
-                        else
+                        //else if (MinecraftServer.Loaded)
+                        //{
+                        //    ProcessLog(OutputText.Data.Split(Util.RightBracketSplitter, StringSplitOptions.RemoveEmptyEntries));
+                        //}
+                        else if (!MinecraftServer.Loaded)
                         {
                             MinecraftServer.Loaded = OutputText.Data.Contains("[Server thread/INFO]: Done (");
                         }
@@ -296,7 +300,7 @@ namespace ServerWrapperTest
             and sends it to the appropriate process
             =======================================*/
             string ConsoleInput = "";
-            MinecraftServer.Run = true;
+            MinecraftServer.Running = true;
             do
             {
                 try
@@ -350,7 +354,7 @@ namespace ServerWrapperTest
                     Util.PrintErrorInfo(e);
                 }
                 ConsoleInput = "";
-            } while (MinecraftServer.Run == true) ;
+            } while (MinecraftServer.Running == true) ;
             //Exiting this loop should return to the menu
         }
 
@@ -358,32 +362,36 @@ namespace ServerWrapperTest
         This is where the program detects and
         processes custom Minecraft commands
         =======================================*/
-        private static void ProcessLog(string[] LogText)
-        {
-            if (LogText.Length >= 3)
-            {
-                if (LogText[1].EndsWith(" [Server thread/INFO"))
-                {
-                    if (LogText[2].StartsWith(": * zero318 smite "))
-                    {
-                        string[] smite_args = LogText[2].Split(new string[] { "smite " }, StringSplitOptions.RemoveEmptyEntries);
+        //private static void ProcessLog(string[] LogText)
+        //{
+        //    if (LogText.Length >= 3)
+        //    {
+        //        if (LogText[1].EndsWith(" [Server thread/INFO"))
+        //        {
+        //            if (LogText[2].StartsWith(": * "))
+        //            {
+        //                string CustomCommandArgs = LogText[2].Split(Util.AsteriskSplitter, 2, StringSplitOptions.None)[1].Remove(0, 1);
+        //                if (CustomCommandArgs.StartsWith("zero318 smite "))
+        //                {
+        //                    string[] smite_args = CustomCommandArgs.Split(new string[] { "smite " }, StringSplitOptions.None);
 
-                        MinecraftServer.Input.WriteLine("execute at " + smite_args[1] + " run summon minecraft:lightning_bolt ~ ~ ~");
-                    }
-                    else if (LogText[2].Contains("game mode to"))
-                    {
-                        Wrapper.WriteLine(LogText[0] + LogText[2]);
-                    }
-                }
-            }
-        }
+        //                    MinecraftServer.Input.WriteLine("execute at " + smite_args[1] + " run summon minecraft:lightning_bolt ~ ~ ~");
+        //                }
+        //            }
+        //            else if (LogText[2].Contains("game mode to"))
+        //            {
+        //                Wrapper.WriteLine(LogText[0] + LogText[2]);
+        //            }
+        //        }
+        //    }
+        //}
 
         /*=======================================
         Saves the world and stops the server
         =======================================*/
         public static void StopRoutine(bool SaveBeforeStopping = true)
         {
-            MinecraftServer.Run = false;
+            MinecraftServer.Running = false;
             MinecraftServer.Stopping = true;
             if (SaveBeforeStopping)
             {

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Ini;
 using SuccExceptions;
 
@@ -29,8 +28,6 @@ namespace ServerWrapperTest
         private static string PIDFile;
 
         public static string RootPath;
-        //public static string UniversePath;
-        //public static string WorldPath;
 
         //I moved this up here since I was having errors accessing it in subroutines.
         //I'm not sure what the proper way of doing it is, but this'll work.
@@ -41,12 +38,6 @@ namespace ServerWrapperTest
         This subroutine starts up the server
         and then monitors the output.
         =======================================*/
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern uint GetConsoleProcessList(
-        uint[] ProcessList,
-        uint ProcessCount
-        );
-
         public static void Run()
         {
             FactorioServer.Loaded = false;
@@ -64,7 +55,6 @@ namespace ServerWrapperTest
             =======================================*/
             if (!File.Exists(SettingsFilePath))
             {
-                //ds = DefaultSettings
                 IniFile ds = new IniFile(SettingsFileName);
                 ds.Write("Version", "1.14", "Minecraft");
             }
@@ -80,8 +70,6 @@ namespace ServerWrapperTest
             /*=======================================
             Setup some files related to logs and crap
             =======================================*/
-            Wrapper.WriteLine("Configuring custom logging...");
-            FactorioServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
             Wrapper.WriteLine("Checking for previous unstopped servers...");
             PIDFile = RootPath + s.Read("PIDFile", "Factorio");
             if (File.Exists(PIDFile))
@@ -163,8 +151,6 @@ namespace ServerWrapperTest
             Wrapper.WriteLine("Starting Factorio server...");
             FactorioServer.Process.Start();
 
-            uint[] PID_Array = new uint[8];
-            GetConsoleProcessList(PID_Array, 8);
             File.WriteAllText(PIDFile, FactorioServer.Process.Id.ToString());
 
             //Redirect the input so that the code can send text
@@ -273,7 +259,6 @@ namespace ServerWrapperTest
             //while (FactorioServer.Loaded == true) ;
             Wrapper.Mode = Wrapper.Modes.Menu;
             FactorioServer.Input = null;
-            FactorioServer.CommandLog.Close();
             if (File.Exists(PIDFile))
             {
                 File.Delete(PIDFile);

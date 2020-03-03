@@ -47,7 +47,7 @@ namespace ServerWrapperTest
         public static Modes Mode;
         public static Modes InputTarget;
 
-        public enum Modes : byte { Menu, MinecraftServer, FactorioServer, MinecraftFactorioBridge, UnturnedServer, SRB2KServer };
+        public enum Modes : byte { Menu, FactorioServer };
 
         //Execution starts here
         static void Main(string[] StartupArgs)
@@ -73,25 +73,9 @@ namespace ServerWrapperTest
                     case Wrapper.Modes.Menu: //Wrapper Menu
                         Wrapper.Menu();
                         break;
-                    case Wrapper.Modes.MinecraftServer: //Run MC Server
-                        //NewMinecraftServer Test = new NewMinecraftServer("Test");
-                        //Test.Run();
-                        MinecraftServer.Run();
-                        break;
                     case Wrapper.Modes.FactorioServer:
-                        //NewFactorioServer Test2 = new NewFactorioServer("Test2");
-                        //Test2.Run();
                         FactorioServer.Run();
                         break;
-                    //case Wrapper.Modes.MinecraftFactorioBridge:
-                    //    MinecraftFactorioBridge.Run();
-                    //    break;
-                    case Wrapper.Modes.UnturnedServer:
-                        UnturnedServer.Run();
-                        break;
-                    //case Wrapper.Modes.SRB2KServer:
-                    //    SRB2KServer.Run();
-                    //    break;
                     default:
                         Wrapper.ErrorWriteLine("Invalid mode!");
                         break;
@@ -104,37 +88,17 @@ namespace ServerWrapperTest
         {
             Console.Title = "Server Wrapper " + Wrapper.Version;
             Wrapper.WriteLine("Wrapper Menu:\n" +
-                              "1. Start Minecraft Server\n" +
                               "2. Start Factorio Server\n" +
-                              "3. Start Minecraft Factorio Bridge\n" +
-                              "4. Start Unturned Server\n" +
-                              "5. Start SRB2K Server\n" +
                               "q. Exit Wrapper");
             bool ValidSelection = false;
             do
             {
                 switch (Console.ReadKey().KeyChar)
                 {
-                    case '1':
-                        Wrapper.Mode = Wrapper.Modes.MinecraftServer;
-                        ValidSelection = true;
-                        break;
                     case '2':
                         Wrapper.Mode = Wrapper.Modes.FactorioServer;
                         ValidSelection = true;
                         break;
-                    //case '3':
-                    //    Wrapper.Mode = Wrapper.Modes.MinecraftFactorioBridge;
-                    //    ValidSelection = true;
-                    //    break;
-                    case '4':
-                        Wrapper.Mode = Wrapper.Modes.UnturnedServer;
-                        ValidSelection = true;
-                        break;
-                    //case '5':
-                    //    Wrapper.Mode = Wrapper.Modes.SRB2KServer;
-                    //    ValidSelection = true;
-                    //    break;
                     case 'q':
                         Wrapper.Run = false;
                         ValidSelection = true;
@@ -160,10 +124,10 @@ namespace ServerWrapperTest
             {
                 case "stop":
                 case "stopwrapper":
-                    if (MinecraftServer.Running)
-                    {
-                        MinecraftServer.StopRoutine();
-                    }
+                    //if (MinecraftServer.Running)
+                    //{
+                    //    MinecraftServer.StopRoutine();
+                    //}
                     break;
                 case "inputmode":
                     if (CommandArguments.Length > 1)
@@ -175,27 +139,9 @@ namespace ServerWrapperTest
                             case "wrapper":
                                 Util.SetInputTarget(Wrapper.Modes.Menu);
                                 break;
-                            case "1":
-                            case "minecraft":
-                                Util.SetInputTarget(Wrapper.Modes.MinecraftServer);
-                                break;
                             case "2":
                             case "factorio":
                                 Util.SetInputTarget(Wrapper.Modes.FactorioServer);
-                                break;
-                            case "3":
-                            case "bridge":
-                            case "minecraftfactoriobridge":
-                                Util.SetInputTarget(Wrapper.Modes.MinecraftFactorioBridge);
-                                break;
-                            case "4":
-                            case "unturned":
-                                Util.SetInputTarget(Wrapper.Modes.UnturnedServer);
-                                break;
-                            case "5":
-                            case "kart":
-                            case "srb2k":
-                                Util.SetInputTarget(Wrapper.Modes.SRB2KServer);
                                 break;
                             default:
                                 throw new TrashMonkeyException("Invalid input mode!");
@@ -211,23 +157,11 @@ namespace ServerWrapperTest
                     switch (Wrapper.InputTarget)
                     {
                         case Wrapper.Modes.Menu:
-                            Util.SetInputTarget(Wrapper.Modes.MinecraftServer);
-                            break;
-                        case Wrapper.Modes.MinecraftServer:
                             Util.SetInputTarget(Wrapper.Modes.FactorioServer);
                             break;
                         case Wrapper.Modes.FactorioServer:
-                            Util.SetInputTarget(Wrapper.Modes.MinecraftFactorioBridge);
-                            break;
-                        case Wrapper.Modes.MinecraftFactorioBridge:
-                            Util.SetInputTarget(Wrapper.Modes.UnturnedServer);
-                            break;
-                        case Wrapper.Modes.UnturnedServer:
                             Util.SetInputTarget(Wrapper.Modes.Menu);
                             break;
-                        //case Wrapper.Modes.SRB2KServer:
-                        //    Util.SetInputTarget(Wrapper.Modes.Menu);
-                        //    break;
                         default:
                             Wrapper.InputTarget = Wrapper.Modes.Menu;
                             throw new TrashMonkeyException("Invalid console mode detected! Switching to wrapper mode.");

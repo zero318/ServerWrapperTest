@@ -69,26 +69,10 @@ namespace ServerWrapperTest
                     Util.WriteToLog("Switching to wrapper mode.", Wrapper.OutputFormat);
                     Console.ForegroundColor = Wrapper.OutputFormat.Color;
                     break;
-                case Wrapper.Modes.MinecraftServer:
-                    Util.WriteToLog("Switching to Minecraft mode.", Wrapper.OutputFormat);
-                    Console.ForegroundColor = MinecraftServer.OutputFormat.Color;
-                    break;
                 case Wrapper.Modes.FactorioServer:
                     Util.WriteToLog("Switching to Factorio mode.", Wrapper.OutputFormat);
                     Console.ForegroundColor = FactorioServer.OutputFormat.Color;
                     break;
-                //case Wrapper.Modes.MinecraftFactorioBridge:
-                //    Util.WriteToLog("Switching to Bridge mode.", Wrapper.OutputFormat);
-                //    Console.ForegroundColor = MinecraftFactorioBridge.OutputFormat.Color;
-                //    break;
-                case Wrapper.Modes.UnturnedServer:
-                    Util.WriteToLog("Switching to Unturned mode.", Wrapper.OutputFormat);
-                    Console.ForegroundColor = UnturnedServer.OutputFormat.Color;
-                    break;
-                //case Wrapper.Modes.SRB2KServer:
-                //    Util.WriteToLog("Switching to SRB2K mode.", Wrapper.OutputFormat);
-                //    Console.ForegroundColor = SRB2KServer.OutputFormat.Color;
-                //    break;
             }
         }
 
@@ -131,37 +115,6 @@ namespace ServerWrapperTest
                 Entries.Add(Entry.Key + KeyValueJoiner + Entry.Value);
             }
             return Entries.ToArray();
-        }
-
-        /*=======================================
-        This method returns a bool as a cheap and
-        lazy way of short-circuiting my icon checking
-        logic in MinecraftServer.cs
-        =======================================*/
-        public static bool SetIcon(string IconPath, bool CompareFiles = true)
-        {
-            //Optionally skip comparison logic
-            if (CompareFiles)
-            {
-                //If this icon doesn't exist, don't try to do anything
-                if (!File.Exists(IconPath))
-                {
-                    return false;
-                }
-                //If there's already an icon specified...
-                if (File.Exists(MinecraftServer.RootPath + "server-icon.png"))
-                {
-                    //Don't try to copy over it if they're the same
-                    //and skip further icon checks
-                    if (FilesAreEqual(new FileInfo(MinecraftServer.RootPath + "server-icon.png"), new FileInfo(IconPath)))
-                    {
-                        return true;
-                    }
-                }
-            }
-            //Copy the icon file
-            File.Copy(IconPath, MinecraftServer.RootPath + "server-icon.png", true);
-            return true;
         }
 
         /*=======================================

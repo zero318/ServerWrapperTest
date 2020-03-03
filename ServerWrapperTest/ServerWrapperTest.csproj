@@ -207,22 +207,17 @@
   <ItemGroup>
     <Compile Include="FactorioServer.cs" />
     <Compile Include="IniFile.cs" />
-    <Compile Include="MinecraftServer.cs" />
-    <Compile Include="NbtFile.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="UnturnedServer.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Wrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SuccExceptions.cs" />
-    <Compile Include="_DebugTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="default_server.properties" />
     <None Include="App.config" />
     <None Include="packages.config" />
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -234,7 +229,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="default-icon.png" />
     <Content Include="PINGAS_Square.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

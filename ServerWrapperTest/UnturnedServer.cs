@@ -20,12 +20,12 @@ namespace ServerWrapperTest
 
         public static bool Running = false;
         private static bool Loaded;
-        private static bool Stopping;
+        //private static bool Stopping;
         private static string PIDFile;
 
         public static string RootPath;
-        public static string UniversePath;
-        public static string WorldPath;
+        //public static string UniversePath;
+        //public static string WorldPath;
 
         //I moved this up here since I was having errors accessing it in subroutines.
         //I'm not sure what the proper way of doing it is, but this'll work.
@@ -39,7 +39,7 @@ namespace ServerWrapperTest
         public static void Run()
         {
             UnturnedServer.Loaded = false;
-            UnturnedServer.Stopping = false;
+            //UnturnedServer.Stopping = false;
             Console.ForegroundColor = ConsoleColor.Cyan;
             Wrapper.InputTarget = Wrapper.Modes.Menu;
 
@@ -251,7 +251,7 @@ namespace ServerWrapperTest
         public static void StopRoutine(bool SaveBeforeStopping = true)
         {
             UnturnedServer.Running = false;
-            UnturnedServer.Stopping = true;
+            //UnturnedServer.Stopping = true;
             //if (SaveBeforeStopping)
             //{
             //    UnturnedServer.Input.WriteLine("save");

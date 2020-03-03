@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Ini;
 using SuccExceptions;
 
@@ -40,6 +41,12 @@ namespace ServerWrapperTest
         This subroutine starts up the server
         and then monitors the output.
         =======================================*/
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern uint GetConsoleProcessList(
+        uint[] ProcessList,
+        uint ProcessCount
+        );
+
         public static void Run()
         {
             FactorioServer.Loaded = false;
@@ -103,8 +110,8 @@ namespace ServerWrapperTest
             =======================================*/
             Wrapper.WriteLine("Configuring server process...");
             FactorioServer.Process = new Process();
-            FactorioServer.Process.StartInfo.FileName = s.Read("ServerFolder", "Factorio");
-            FactorioServer.Process.StartInfo.Arguments = s.Read("Arguments", "Factorio");
+            FactorioServer.Process.StartInfo.FileName = s.Read("ExePath", "Factorio");
+            FactorioServer.Process.StartInfo.Arguments = s.Read("ServerArgs", "Factorio");
             FactorioServer.Process.StartInfo.CreateNoWindow = true;
             FactorioServer.Process.StartInfo.WorkingDirectory = RootPath;
             FactorioServer.Process.StartInfo.ErrorDialog = false;
@@ -112,7 +119,7 @@ namespace ServerWrapperTest
             FactorioServer.Process.StartInfo.RedirectStandardError = true;
             FactorioServer.Process.StartInfo.RedirectStandardOutput = true;
             FactorioServer.Process.StartInfo.RedirectStandardInput = true;
-
+            
 
             /*=======================================
             These are what read/print/process the server log.
@@ -156,6 +163,8 @@ namespace ServerWrapperTest
             Wrapper.WriteLine("Starting Factorio server...");
             FactorioServer.Process.Start();
 
+            uint[] PID_Array = new uint[8];
+            GetConsoleProcessList(PID_Array, 8);
             File.WriteAllText(PIDFile, FactorioServer.Process.Id.ToString());
 
             //Redirect the input so that the code can send text
@@ -171,57 +180,65 @@ namespace ServerWrapperTest
 
             Wrapper.Command("InputMode 2");
             Wrapper.WriteLine("Use \"wrapper InputMode 0\" to access Wrapper mode.");
+            FactorioServer.Process.WaitForExit();
 
             /*=======================================
             This loop monitors for user input in the console
             and sends it to the appropriate process
             =======================================*/
             string ConsoleInput = "";
+            //string ConsoleInput = Console.In.ReadLineAsync().;
             FactorioServer.Running = true;
+            //FactorioServer.Process.
             do
             {
                 try
                 {
                     //Get user input
-                    ConsoleInput = Console.In.ReadLine();
+                    ConsoleInput = Console.ReadLine();
+                    ConsoleInput = Console.ReadLine();
+                    //Console.In.W
+                    //ConsoleInput = Console.In.ReadLine();
+                    FactorioServer.Input.WriteLine("test");
+                    //ConsoleInput = Console.In.ReadLineAsync().Result;
 
                     //If the user wasn't a squit
-                    if (string.IsNullOrWhiteSpace(ConsoleInput) == false)
-                    {
-                        switch (Wrapper.InputTarget)
-                        {
-                            //Default to wrapper
-                            case Wrapper.Modes.Menu:
-                                Wrapper.Command(ConsoleInput);
-                                break;
-                            //Default to Minecraft server
-                            case Wrapper.Modes.FactorioServer:
-                                //Send it to the wrapper if it's a wrapper command
-                                if (ConsoleInput.StartsWith("wrapper"))
-                                {
-                                    Wrapper.Command(ConsoleInput.Remove(0, 7));
-                                }
-                                //If it's a stop command, switch to the stop routine
-                                else if (ConsoleInput == "/stop")
-                                {
-                                    FactorioServer.StopRoutine();
-                                }
-                                //else if (ConsoleInput == "stop-no-save")
-                                //{
-                                //    FactorioServer.StopRoutine(false);
-                                //}
-                                //Send it to the Minecraft server
-                                else
-                                {
-                                    //FactorioServer.Process.StandardInput.WriteLine(ConsoleInput);
-                                    FactorioServer.Input.WriteLine(ConsoleInput);
-                                }
-                                break;
-                            default:
-                                Wrapper.InputTarget = Wrapper.Modes.Menu;
-                                throw new TrashMonkeyException("Invalid input mode! Defaulting to wrapper mode.");
-                        }
-                    }
+                    //if (string.IsNullOrWhiteSpace(ConsoleInput) == false)
+                    //{
+                    //    switch (Wrapper.InputTarget)
+                    //    {
+                    //        //Default to wrapper
+                    //        case Wrapper.Modes.Menu:
+                    //            Wrapper.Command(ConsoleInput);
+                    //            break;
+                    //        //Default to Minecraft server
+                    //        case Wrapper.Modes.FactorioServer:
+                    //            //Send it to the wrapper if it's a wrapper command
+                    //            if (ConsoleInput.StartsWith("wrapper"))
+                    //            {
+                    //                Wrapper.Command(ConsoleInput.Remove(0, 7));
+                    //            }
+                    //            //If it's a stop command, switch to the stop routine
+                    //            else if (ConsoleInput == "/stop")
+                    //            {
+                    //                FactorioServer.StopRoutine();
+                    //            }
+                    //            //else if (ConsoleInput == "stop-no-save")
+                    //            //{
+                    //            //    FactorioServer.StopRoutine(false);
+                    //            //}
+                    //            //Send it to the Minecraft server
+                    //            else
+                    //            {
+                    //                //FactorioServer.Process.StandardInput.WriteLine(ConsoleInput);
+                    //                FactorioServer.Input.WriteLine(ConsoleInput);
+                    //            }
+                    //            break;
+                    //        default:
+                    //            Wrapper.InputTarget = Wrapper.Modes.Menu;
+                    //            throw new TrashMonkeyException("Invalid input mode! Defaulting to wrapper mode.");
+                    //    }
+                    //}
                 }
                 catch (TrashMonkeyException e)  //Handled errors
                 {
@@ -231,7 +248,7 @@ namespace ServerWrapperTest
                 {
                     Util.PrintErrorInfo(e);
                 }
-                ConsoleInput = "";
+                //ConsoleInput = "";
             } while (FactorioServer.Running == true);
             //Exiting this loop should return to the menu
         }
@@ -249,8 +266,8 @@ namespace ServerWrapperTest
             //    //Wait for the save to finish
             //    while (FactorioServer.Loaded == true) ;
             //}
-            //FactorioServer.Input.WriteLine("/quit");
-            FactorioServer.Process.StandardInput.WriteLine("/quit");
+            FactorioServer.Input.WriteLine("/quit");
+            //FactorioServer.Process.StandardInput.WriteLine("/quit");
             //Make sure the server process has stopped
             while (FactorioServer.Process.HasExited == false) ;
             //while (FactorioServer.Loaded == true) ;

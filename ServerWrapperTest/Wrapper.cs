@@ -16,6 +16,7 @@ my style of code and/or C#:
 
 //I've commented out the includes that aren't being used at the moment.
 using System;
+using System.IO;
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;
@@ -56,7 +57,6 @@ namespace ServerWrapperTest
 
             //This makes the program not do something stupid if you press Ctrl+C
             //Console.TreatControlCAsInput = true;
-
             Wrapper.Run = true;
             Wrapper.InputTarget = Wrapper.Modes.Menu;
             Wrapper.WriteLine("Starting Up Wrapper!");
@@ -74,9 +74,13 @@ namespace ServerWrapperTest
                         Wrapper.Menu();
                         break;
                     case Wrapper.Modes.MinecraftServer: //Run MC Server
+                        //NewMinecraftServer Test = new NewMinecraftServer("Test");
+                        //Test.Run();
                         MinecraftServer.Run();
                         break;
                     case Wrapper.Modes.FactorioServer:
+                        //NewFactorioServer Test2 = new NewFactorioServer("Test2");
+                        //Test2.Run();
                         FactorioServer.Run();
                         break;
                     //case Wrapper.Modes.MinecraftFactorioBridge:

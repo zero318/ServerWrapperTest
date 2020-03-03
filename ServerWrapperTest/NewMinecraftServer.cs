@@ -6,47 +6,22 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Ini;
 using SuccExceptions;
 
 namespace ServerWrapperTest
 {
-    class MinecraftServer
+    sealed class NewMinecraftServer : AbstractServer
     {
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[Minecraft] ", ConsoleColor.Green);
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[Minecraft Error] ", ConsoleColor.DarkGreen);
 
-        private static Process Process;
+        public NewMinecraftServer(string ServerName) : base(ServerName) { }
 
-        public static bool Running = false;
-        private static bool Loaded;
-        private static bool Stopping;
-        private static string PIDFile;
-
-        public static string RootPath;
-        public static string UniversePath;
-        public static string WorldPath;
-
-        //I moved this up here since I was having errors accessing it in subroutines.
-        //I'm not sure what the proper way of doing it is, but this'll work.
-        public static StreamWriter Input;
-        private static StreamWriter CommandLog;
-
-        /*=======================================
-        This subroutine starts up the server
-        and then monitors the output.
-        =======================================*/
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern uint GetConsoleProcessList(
-        uint[] ProcessList,
-        uint ProcessCount
-        );
-
-        public static void Run()
+        public override int Run()
         {
-            MinecraftServer.Loaded = false;
-            MinecraftServer.Stopping = false;
+            Loaded = false;
+            Stopping = false;
             Console.ForegroundColor = ConsoleColor.Cyan;
             Wrapper.InputTarget = Wrapper.Modes.Menu;
 
@@ -83,7 +58,7 @@ namespace ServerWrapperTest
             =======================================*/
             Wrapper.WriteLine("Reading wrapper settings file...");
             IniFile s = new IniFile(SettingsFileName);
-            Console.Title = "Wrapper." + Wrapper.Version + " MinecraftServer." + s.Read("Version", "Minecraft");
+            Console.Title = "Wrapper." + Wrapper.Version + " this." + s.Read("Version", "Minecraft");
             RootPath = s.Read("ServerFolder", "Windows") + '\\';
 
             //Automatically accept the EULA because screw that
@@ -95,8 +70,8 @@ namespace ServerWrapperTest
             //string MinecraftJar = "minecraft_server." + s.Read("Version", "Minecraft") + ".jar";
             string MinecraftJar = s.Read("JarName", "Minecraft");
             string ArgumentsString = "-Xmx" + s.Read("MemMax", "Java") + " -Xms" + s.Read("MemMin", "Java") +
-                                        " " + s.Read("Type", "Java") + " " + s.BigRead("Arguments", "Java") +
-                                        " -jar \"" + RootPath;
+                                " " + s.Read("Type", "Java") + " " + s.BigRead("Arguments", "Java") +
+                                " -jar \"" + RootPath;
             if (Convert.ToBoolean(s.Read("Enable", "Fabric")))
             {
                 Console.Title = Console.Title + " FabricLoader." + s.Read("Version", "Fabric");
@@ -112,7 +87,7 @@ namespace ServerWrapperTest
             from that to the end of the arguments string
             =======================================*/
             Wrapper.WriteLine("Configuring universe...");
-            string WorldSelectFilePath = RootPath + s.Read("WorldSelectFile","Minecraft");
+            string WorldSelectFilePath = RootPath + s.Read("WorldSelectFile", "Minecraft");
             if (!File.Exists(WorldSelectFilePath))
             {
                 //dw = DefaultWorld
@@ -124,7 +99,7 @@ namespace ServerWrapperTest
             }
 
             IniFile w = new IniFile(WorldSelectFilePath);
-            
+
             //The folder path is processed this way since Minecraft prefers a relative path,
             //but the wrapper still needs to access the folder name itself with an absolute path.
             string UniversesFolder = w.Read("UniversesFolderName", "Windows");
@@ -196,48 +171,48 @@ namespace ServerWrapperTest
                 }
             }
 
-            /*=======================================
-            Setup some files related to logs and crap
-            =======================================*/
-            Wrapper.WriteLine("Configuring custom logging...");
-            MinecraftServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
-            Wrapper.WriteLine("Checking for previous unstopped servers...");
-            PIDFile = RootPath + s.Read("PIDFile", "Minecraft");
-            if (File.Exists(PIDFile))
-            {
-                Int32 PreviousPID = Int32.Parse(File.ReadAllText(PIDFile));
-                try
-                {
-                    using (Process PreviousServer = Process.GetProcessById(PreviousPID))
-                    using (StreamWriter PreviousInput = PreviousServer.StandardInput)
-                    {
-                        PreviousInput.WriteLine("stop");
-                        //Make sure the server process has stopped
-                        while (PreviousServer.HasExited == false) ;
-                    }
-                    Wrapper.WriteLine("Previous server stopped successfully");
-                }
-                catch (Exception)
-                {
-                    Wrapper.WriteLine("No previous server process running");
-                }
-                File.Delete(PIDFile);
-            }
+            ///*=======================================
+            //Setup some files related to logs and crap
+            //=======================================*/
+            //Wrapper.WriteLine("Configuring custom logging...");
+            ////this.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
+            //Wrapper.WriteLine("Checking for previous unstopped servers...");
+            //PIDFile = RootPath + s.Read("PIDFile", "Minecraft");
+            //if (File.Exists(PIDFile))
+            //{
+            //    Int32 PreviousPID = Int32.Parse(File.ReadAllText(PIDFile));
+            //    try
+            //    {
+            //        using (Process PreviousServer = Process.GetProcessById(PreviousPID))
+            //        using (StreamWriter PreviousInput = PreviousServer.StandardInput)
+            //        {
+            //            PreviousInput.WriteLine("stop");
+            //            //Make sure the server process has stopped
+            //            while (PreviousServer.HasExited == false) ;
+            //        }
+            //        Wrapper.WriteLine("Previous server stopped successfully");
+            //    }
+            //    catch (Exception)
+            //    {
+            //        Wrapper.WriteLine("No previous server process running");
+            //    }
+            //    File.Delete(PIDFile);
+            //}
 
             /*=======================================
             Configure the server process before starting it
             =======================================*/
             Wrapper.WriteLine("Configuring server process...");
-            MinecraftServer.Process = new Process();
-            MinecraftServer.Process.StartInfo.FileName = s.Read("Executable", "Java");
-            MinecraftServer.Process.StartInfo.Arguments = ArgumentsString;
-            MinecraftServer.Process.StartInfo.CreateNoWindow = false;
-            MinecraftServer.Process.StartInfo.WorkingDirectory = RootPath;
-            MinecraftServer.Process.StartInfo.ErrorDialog = false;
-            MinecraftServer.Process.StartInfo.UseShellExecute = false;
-            MinecraftServer.Process.StartInfo.RedirectStandardError = true;
-            MinecraftServer.Process.StartInfo.RedirectStandardOutput = true;
-            MinecraftServer.Process.StartInfo.RedirectStandardInput = true;
+            ServerProcess = new Process();
+            ServerProcess.StartInfo.FileName = s.Read("Executable", "Java");
+            ServerProcess.StartInfo.Arguments = ArgumentsString;
+            ServerProcess.StartInfo.CreateNoWindow = false;
+            ServerProcess.StartInfo.WorkingDirectory = RootPath;
+            ServerProcess.StartInfo.ErrorDialog = false;
+            ServerProcess.StartInfo.UseShellExecute = false;
+            ServerProcess.StartInfo.RedirectStandardError = true;
+            ServerProcess.StartInfo.RedirectStandardOutput = true;
+            ServerProcess.StartInfo.RedirectStandardInput = true;
 
 
             /*=======================================
@@ -246,36 +221,36 @@ namespace ServerWrapperTest
             even while the code continues running below.
             =======================================*/
             Wrapper.WriteLine("Configuring console output...");
-            MinecraftServer.Process.OutputDataReceived += new DataReceivedEventHandler
+            ServerProcess.OutputDataReceived += new DataReceivedEventHandler
             (
                 (sender, OutputText) =>
                 {
                     if (string.IsNullOrWhiteSpace(OutputText.Data) == false)
                     {
-                        Util.WriteToLog(OutputText.Data, MinecraftServer.OutputFormat);
+                        Util.WriteToLog(OutputText.Data, OutputFormat);
 
-                        if (MinecraftServer.Stopping == true)
+                        if (Stopping == true)
                         {
-                            MinecraftServer.Loaded = !OutputText.Data.Contains("[Server thread/INFO]: Saved the game");
+                            Loaded = !OutputText.Data.Contains("[Server thread/INFO]: Saved the game");
                         }
-                        //else if (MinecraftServer.Loaded)
+                        //else if (this.Loaded)
                         //{
                         //    ProcessLog(OutputText.Data.Split(Util.RightBracketSplitter, StringSplitOptions.RemoveEmptyEntries));
                         //}
-                        else if (!MinecraftServer.Loaded)
+                        else if (!Loaded)
                         {
-                            MinecraftServer.Loaded = OutputText.Data.Contains("[Server thread/INFO]: Done (");
+                            Loaded = OutputText.Data.Contains("[Server thread/INFO]: Done (");
                         }
                     }
                 }
             );
-            MinecraftServer.Process.ErrorDataReceived += new DataReceivedEventHandler
+            ServerProcess.ErrorDataReceived += new DataReceivedEventHandler
             (
                 (sender, ErrorText) =>
                 {
                     if (string.IsNullOrWhiteSpace(ErrorText.Data) == false)
                     {
-                        Util.WriteToLog(ErrorText.Data, MinecraftServer.ErrorFormat);
+                        Util.WriteToLog(ErrorText.Data, ErrorFormat);
                     }
                 }
             );
@@ -284,22 +259,19 @@ namespace ServerWrapperTest
             Finally start the dang server process
             =======================================*/
             Wrapper.WriteLine("Starting Minecraft server...");
-            MinecraftServer.Process.Start();
+            ServerProcess.Start();
 
-            uint[] PID_Array = new uint[8];
-            GetConsoleProcessList(PID_Array, 8);
-
-            File.WriteAllText(PIDFile,MinecraftServer.Process.Id.ToString());
+            //File.WriteAllText(PIDFile, this.ServerProcess.Id.ToString());
 
             //Redirect the input so that the code can send text
-            MinecraftServer.Input = MinecraftServer.Process.StandardInput;
+            Input = ServerProcess.StandardInput;
 
             //Start checking for output
-            MinecraftServer.Process.BeginOutputReadLine();
-            MinecraftServer.Process.BeginErrorReadLine();
+            ServerProcess.BeginOutputReadLine();
+            ServerProcess.BeginErrorReadLine();
 
             //Don't try to do anything else until the server finishes loading
-            while (MinecraftServer.Loaded == false) ;
+            while (Loaded == false) ;
             Wrapper.WriteLine("Minecraft server loaded!");
 
             Wrapper.Command("InputMode 1");
@@ -310,7 +282,7 @@ namespace ServerWrapperTest
             and sends it to the appropriate process
             =======================================*/
             string ConsoleInput = "";
-            MinecraftServer.Running = true;
+            Running = true;
             do
             {
                 try
@@ -337,16 +309,16 @@ namespace ServerWrapperTest
                                 //If it's a stop command, switch to the stop routine
                                 else if (ConsoleInput == "stop")
                                 {
-                                    MinecraftServer.StopRoutine();
+                                    StopRoutine();
                                 }
                                 else if (ConsoleInput == "stop-no-save")
                                 {
-                                    MinecraftServer.StopRoutine(false);
+                                    StopRoutine(false);
                                 }
                                 //Send it to the Minecraft server
                                 else
                                 {
-                                    MinecraftServer.Input.WriteLine(ConsoleInput);
+                                    Input.WriteLine(ConsoleInput);
                                 }
                                 break;
                             default:
@@ -364,61 +336,34 @@ namespace ServerWrapperTest
                     Util.PrintErrorInfo(e);
                 }
                 ConsoleInput = "";
-            } while (MinecraftServer.Running == true) ;
+            } while (Running == true) ;
             //Exiting this loop should return to the menu
+            return 1;
         }
-
-        /*=======================================
-        This is where the program detects and
-        processes custom Minecraft commands
-        =======================================*/
-        //private static void ProcessLog(string[] LogText)
-        //{
-        //    if (LogText.Length >= 3)
-        //    {
-        //        if (LogText[1].EndsWith(" [Server thread/INFO"))
-        //        {
-        //            if (LogText[2].StartsWith(": * "))
-        //            {
-        //                string CustomCommandArgs = LogText[2].Split(Util.AsteriskSplitter, 2, StringSplitOptions.None)[1].Remove(0, 1);
-        //                if (CustomCommandArgs.StartsWith("zero318 smite "))
-        //                {
-        //                    string[] smite_args = CustomCommandArgs.Split(new string[] { "smite " }, StringSplitOptions.None);
-
-        //                    MinecraftServer.Input.WriteLine("execute at " + smite_args[1] + " run summon minecraft:lightning_bolt ~ ~ ~");
-        //                }
-        //            }
-        //            else if (LogText[2].Contains("game mode to"))
-        //            {
-        //                Wrapper.WriteLine(LogText[0] + LogText[2]);
-        //            }
-        //        }
-        //    }
-        //}
 
         /*=======================================
         Saves the world and stops the server
         =======================================*/
-        public static void StopRoutine(bool SaveBeforeStopping = true)
+        public override void StopRoutine(bool SaveBeforeStopping = true)
         {
-            MinecraftServer.Running = false;
-            MinecraftServer.Stopping = true;
+            Running = false;
+            Stopping = true;
             if (SaveBeforeStopping)
             {
-                MinecraftServer.Input.WriteLine("save-all");
+                Input.WriteLine("save-all");
                 //Wait for the save to finish
-                while (MinecraftServer.Loaded == true) ;
+                while (Loaded == true) ;
             }
-            MinecraftServer.Input.WriteLine("stop");
+            Input.WriteLine("stop");
             //Make sure the server process has stopped
-            while (MinecraftServer.Process.HasExited == false) ;
+            while (ServerProcess.HasExited == false) ;
             Wrapper.Mode = Wrapper.Modes.Menu;
-            MinecraftServer.Input = null;
-            MinecraftServer.CommandLog.Close();
-            if (File.Exists(PIDFile))
-            {
-                File.Delete(PIDFile);
-            }
+            Input = null;
+            //this.CommandLog.Close();
+            //if (File.Exists(PIDFile))
+            //{
+            //    File.Delete(PIDFile);
+            //}
             Wrapper.WriteLine("Server stopped successfully!");
         }
     }

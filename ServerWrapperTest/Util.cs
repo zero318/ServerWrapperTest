@@ -10,7 +10,7 @@ using SuccExceptions;
 
 namespace ServerWrapperTest
 {
-    class Util
+    sealed class Util
     {
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[C#] ", ConsoleColor.White);
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[C# Error] ", ConsoleColor.Gray);

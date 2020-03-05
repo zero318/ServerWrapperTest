@@ -6,11 +6,18 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Ini;
 using SuccExceptions;
 
 namespace ServerWrapperTest {
     class FactorioServer {
+        [DllImport("kernel32.dll")]
+        static extern bool FreeConsole();
+
+        [DllImport("kernel32")]
+        static extern bool AllocConsole();
+
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[Factorio] ", ConsoleColor.Red);
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[Factorio Error] ", ConsoleColor.DarkRed);
 
@@ -76,7 +83,12 @@ namespace ServerWrapperTest {
             (
                 (sender, OutputText) => {
                     if (string.IsNullOrWhiteSpace(OutputText.Data) == false) {
-                        Util.WriteToLog(OutputText.Data, FactorioServer.OutputFormat);
+                        if (FactorioServer.Loaded) {
+                            Util.WriteToLog(OutputText.Data, FactorioServer.OutputFormat);
+                        }
+                        else {
+                            
+                        }
                         if (FactorioServer.Stopping == true) {
                             FactorioServer.Loaded = !OutputText.Data.Contains("changing state from(Disconnected) to(Closed)");
                         }
@@ -90,7 +102,12 @@ namespace ServerWrapperTest {
             (
                 (sender, ErrorText) => {
                     if (string.IsNullOrWhiteSpace(ErrorText.Data) == false) {
-                        Util.WriteToLog(ErrorText.Data, FactorioServer.ErrorFormat);
+                        if (FactorioServer.Loaded) {
+                            Util.WriteToLog(ErrorText.Data, FactorioServer.ErrorFormat);
+                        }
+                        else {
+                            
+                        }
                     }
                 }
             );
@@ -99,6 +116,7 @@ namespace ServerWrapperTest {
             Finally start the dang server process
             =======================================*/
             Wrapper.WriteLine("Starting Factorio server...");
+            FreeConsole();
             FactorioServer.Process.Start();
 
             //Start checking for output
@@ -107,6 +125,7 @@ namespace ServerWrapperTest {
 
             //Don't try to do anything else until the server finishes loading
             while (FactorioServer.Loaded == false) ;
+            AllocConsole();
             Wrapper.WriteLine("Factorio server loaded!");
 
             Wrapper.Command("InputMode 2");

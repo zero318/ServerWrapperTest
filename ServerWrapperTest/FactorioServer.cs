@@ -162,6 +162,10 @@ namespace ServerWrapperTest {
 
         /*=======================================
         Saves the world and stops the server
+
+        I don't actually know if this section works yet since
+        the weird input behavior has always occured before
+        this code is even reached. Can't really test/debug it.
         =======================================*/
         public static void StopRoutine() {
             FactorioServer.Running = false;

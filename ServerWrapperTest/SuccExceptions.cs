@@ -9,22 +9,15 @@ copying it and assuming it works.
 
 using System;
 
-namespace SuccExceptions
-{
-    public class TrashMonkeyException : Exception
-    {
-        public TrashMonkeyException()
-        {
+namespace SuccExceptions {
+    public class TrashMonkeyException : Exception {
+        public TrashMonkeyException() {
         }
 
-        public TrashMonkeyException(string message)
-            : base(message)
-        {
+        public TrashMonkeyException(string message) : base(message) {
         }
 
-        public TrashMonkeyException(string message, Exception inner)
-            : base(message, inner)
-        {
+        public TrashMonkeyException(string message, Exception inner) : base(message, inner) {
         }
     }
 }

@@ -35,10 +35,8 @@ using SuccExceptions;
 Generic Block Comment Template
 =======================================*/
 
-namespace ServerWrapperTest
-{
-    class Wrapper
-    {
+namespace ServerWrapperTest {
+    class Wrapper {
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[Wrapper] ", ConsoleColor.Cyan);
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[Wrapper Error] ", ConsoleColor.DarkCyan);
 
@@ -49,14 +47,7 @@ namespace ServerWrapperTest
 
         public enum Modes : byte { Menu, FactorioServer };
 
-        //Execution starts here
-        static void Main(string[] StartupArgs)
-        {
-            //For testing, uncomment this line.
-            //_DebugTest.Test();
-
-            //This makes the program not do something stupid if you press Ctrl+C
-            //Console.TreatControlCAsInput = true;
+        static void Main(string[] StartupArgs) {
             Wrapper.Run = true;
             Wrapper.InputTarget = Wrapper.Modes.Menu;
             Wrapper.WriteLine("Starting Up Wrapper!");
@@ -66,10 +57,8 @@ namespace ServerWrapperTest
             //Otherwise it'll just default to the menu.
             Wrapper.Mode = Enum.IsDefined(typeof(Wrapper.Modes), ((StartupArgs.Length != 0) ? StartupArgs[0] : "-1")) ? (Wrapper.Modes)Enum.Parse(typeof(Wrapper.Modes), StartupArgs[0]) : Wrapper.Modes.Menu;
 
-            while (Wrapper.Run == true) //Set this to false if too much dumb crap happens
-            {
-                switch (Wrapper.Mode)
-                {
+            while (Wrapper.Run == true) { //Set this to false if too much dumb crap happens
+                switch (Wrapper.Mode) {
                     case Wrapper.Modes.Menu: //Wrapper Menu
                         Wrapper.Menu();
                         break;
@@ -84,17 +73,14 @@ namespace ServerWrapperTest
             Environment.Exit(0);
         }
 
-        public static void Menu()
-        {
+        public static void Menu() {
             Console.Title = "Server Wrapper " + Wrapper.Version;
             Wrapper.WriteLine("Wrapper Menu:\n" +
                               "2. Start Factorio Server\n" +
                               "q. Exit Wrapper");
             bool ValidSelection = false;
-            do
-            {
-                switch (Console.ReadKey().KeyChar)
-                {
+            do {
+                switch (Console.ReadKey().KeyChar) {
                     case '2':
                         Wrapper.Mode = Wrapper.Modes.FactorioServer;
                         ValidSelection = true;
@@ -117,24 +103,19 @@ namespace ServerWrapperTest
         It's also probably the crappiest section of the code.
         I'm sure there's a better way of handling this than just string split.
         =======================================*/
-        public static void Command(string Command)
-        {
+        public static void Command(string Command) {
             string[] CommandArguments = Command.Trim().Split(' ');
-            switch (CommandArguments[0].ToLower())
-            {
+            switch (CommandArguments[0].ToLower()) {
                 case "stop":
                 case "stopwrapper":
-                    //if (MinecraftServer.Running)
-                    //{
-                    //    MinecraftServer.StopRoutine();
-                    //}
+                    if (FactorioServer.Running) {
+                        FactorioServer.StopRoutine();
+                    }
                     break;
                 case "inputmode":
-                    if (CommandArguments.Length > 1)
-                    {
+                    if (CommandArguments.Length > 1) {
                         //Mode is specified, so switch to it
-                        switch (CommandArguments[1].ToLower())
-                        {
+                        switch (CommandArguments[1].ToLower()) {
                             case "0":
                             case "wrapper":
                                 Util.SetInputTarget(Wrapper.Modes.Menu);
@@ -147,15 +128,13 @@ namespace ServerWrapperTest
                                 throw new TrashMonkeyException("Invalid input mode!");
                         }
                     }
-                    else
-                    {
+                    else {
                         throw new TrashMonkeyException("Not enough arguments!");
                     }
                     break;
                 case "switchinputmode":
                     //Mode is not specified, so just toggle the current mode
-                    switch (Wrapper.InputTarget)
-                    {
+                    switch (Wrapper.InputTarget) {
                         case Wrapper.Modes.Menu:
                             Util.SetInputTarget(Wrapper.Modes.FactorioServer);
                             break;
@@ -167,6 +146,16 @@ namespace ServerWrapperTest
                             throw new TrashMonkeyException("Invalid console mode detected! Switching to wrapper mode.");
                     }
                     break;
+                case "testecho":
+                    if (CommandArguments.Length > 1)
+                    {
+                        Wrapper.WriteLine(CommandArguments[1]);
+                    }
+                    else
+                    {
+                        throw new TrashMonkeyException("Not enough arguments!");
+                    }
+                    break;
                 default:
                     throw new TrashMonkeyException("Unrecognized wrapper command!");
             }
@@ -175,13 +164,11 @@ namespace ServerWrapperTest
         /*=======================================
         These just print text in the appropriate colors
         =======================================*/
-        public static void WriteLine(string Line)
-        {
+        public static void WriteLine(string Line) {
             Util.WriteToLog(Line, Wrapper.OutputFormat);
         }
 
-        public static void ErrorWriteLine(string Line)
-        {
+        public static void ErrorWriteLine(string Line) {
             Util.WriteToLog(Line, Wrapper.ErrorFormat);
         }
     }

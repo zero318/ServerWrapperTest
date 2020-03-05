@@ -9,10 +9,6 @@ using System.Diagnostics;
 using Ini;
 using SuccExceptions;
 
-/*=======================================
-This file is a placeholder! It doesn't do anything yet!
-=======================================*/
-
 namespace ServerWrapperTest {
     class FactorioServer {
         public static readonly Util.LogFormat OutputFormat = new Util.LogFormat("[Factorio] ", ConsoleColor.Red);
@@ -142,6 +138,8 @@ namespace ServerWrapperTest {
                                 }
                                 //Send it to the Factorio server
                                 else {
+                                    //This line doesn't actually do anything...?
+                                    //https://forums.factorio.com/viewtopic.php?f=58&t=75627
                                     FactorioServer.Process.StandardInput.WriteLine(ConsoleInput);
                                 }
                                 break;

@@ -24,10 +24,6 @@ namespace ServerWrapperTest {
         private static bool Loaded;
         private static bool Stopping;
 
-        //I moved this up here since I was having errors accessing it in subroutines.
-        //I'm not sure what the proper way of doing it is, but this'll work.
-        public static StreamWriter Input;
-
         /*=======================================
         This subroutine starts up the server
         and then monitors the output.
@@ -44,7 +40,6 @@ namespace ServerWrapperTest {
 
             /*=======================================
             Create a settings file with some default values if it doesn't exist.
-            These default values probably won't actually work, but it'll at least create the file.
             =======================================*/
             if (!File.Exists(SettingsFilePath)) {
                 IniFile ds = new IniFile(SettingsFileName);
@@ -110,9 +105,6 @@ namespace ServerWrapperTest {
             Wrapper.WriteLine("Starting Factorio server...");
             FactorioServer.Process.Start();
 
-            //Redirect the input so that the code can send text
-            FactorioServer.Input = FactorioServer.Process.StandardInput;
-
             //Start checking for output
             FactorioServer.Process.BeginOutputReadLine();
             FactorioServer.Process.BeginErrorReadLine();
@@ -152,11 +144,6 @@ namespace ServerWrapperTest {
                                 else {
                                     FactorioServer.Process.StandardInput.WriteLine(ConsoleInput);
                                 }
-                                ////If it's a stop command, switch to the stop routine
-                                //else if (ConsoleInput == "/quit")
-                                //{
-                                //    FactorioServer.StopRoutine();
-                                //}
                                 break;
                             default:
                                 Wrapper.InputTarget = Wrapper.Modes.Menu;
@@ -181,12 +168,11 @@ namespace ServerWrapperTest {
         public static void StopRoutine() {
             FactorioServer.Running = false;
             FactorioServer.Stopping = true;
-            FactorioServer.Input.WriteLine("/quit");
+            FactorioServer.Process.StandardInput.WriteLine("/quit");
             //Make sure the server process has stopped
             while (FactorioServer.Process.HasExited == false) ;
             //while (FactorioServer.Loaded == true) ;
             Wrapper.Mode = Wrapper.Modes.Menu;
-            FactorioServer.Input = null;
             Wrapper.WriteLine("Server stopped successfully!");
         }
     }

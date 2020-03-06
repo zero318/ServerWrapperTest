@@ -16,6 +16,7 @@ namespace ServerWrapperTest
         public static readonly Util.LogFormat ErrorFormat = new Util.LogFormat("[C# Error] ", ConsoleColor.Gray);
         
         public static readonly char[] RightBracketSplitter = { ']' };
+        public static readonly char[] LeftCurlySplitter = { '{' };
         public static readonly char[] SpaceSplitter = { ' ' };
         public static readonly char[] EqualsSplitter = { '=' };
         public static readonly char[] AsteriskSplitter = { '*' };
@@ -77,10 +78,10 @@ namespace ServerWrapperTest
                     Util.WriteToLog("Switching to Factorio mode.", Wrapper.OutputFormat);
                     Console.ForegroundColor = FactorioServer.OutputFormat.Color;
                     break;
-                //case Wrapper.Modes.MinecraftFactorioBridge:
-                //    Util.WriteToLog("Switching to Bridge mode.", Wrapper.OutputFormat);
-                //    Console.ForegroundColor = MinecraftFactorioBridge.OutputFormat.Color;
-                //    break;
+                case Wrapper.Modes.FMCBridge:
+                    Util.WriteToLog("Switching to FMCBridge mode.", Wrapper.OutputFormat);
+                    Console.ForegroundColor = FMCBridge.OutputFormat.Color;
+                    break;
                 case Wrapper.Modes.UnturnedServer:
                     Util.WriteToLog("Switching to Unturned mode.", Wrapper.OutputFormat);
                     Console.ForegroundColor = UnturnedServer.OutputFormat.Color;

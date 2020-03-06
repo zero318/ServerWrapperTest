@@ -19,6 +19,9 @@ namespace ServerWrapperTest
 
         private static Process Process;
 
+        public static bool IsFabric = false;
+        private static bool IsBridge = false;
+
         public static bool Running = false;
         private static bool Loaded;
         private static bool Stopping;
@@ -31,20 +34,15 @@ namespace ServerWrapperTest
         //I moved this up here since I was having errors accessing it in subroutines.
         //I'm not sure what the proper way of doing it is, but this'll work.
         public static StreamWriter Input;
-        private static StreamWriter CommandLog;
+        //private static StreamWriter CommandLog;
 
         /*=======================================
         This subroutine starts up the server
         and then monitors the output.
         =======================================*/
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern uint GetConsoleProcessList(
-        uint[] ProcessList,
-        uint ProcessCount
-        );
-
-        public static void Run()
+        public static void Run(bool BridgeMode = false)
         {
+            MinecraftServer.IsBridge = BridgeMode;
             MinecraftServer.Loaded = false;
             MinecraftServer.Stopping = false;
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -97,8 +95,8 @@ namespace ServerWrapperTest
             string ArgumentsString = "-Xmx" + s.Read("MemMax", "Java") + " -Xms" + s.Read("MemMin", "Java") +
                                         " " + s.Read("Type", "Java") + " " + s.BigRead("Arguments", "Java") +
                                         " -jar \"" + RootPath;
-            if (Convert.ToBoolean(s.Read("Enable", "Fabric")))
-            {
+            //if (Convert.ToBoolean(s.Read("Enable", "Fabric")))
+            if (MinecraftServer.IsFabric == true) {
                 Console.Title = Console.Title + " FabricLoader." + s.Read("Version", "Fabric");
                 //string FabricJar = "fabric-loader-" + s.Read("Version", "Fabric") + ".jar";
                 string FabricJar = s.Read("FabricJarName", "Fabric");
@@ -199,8 +197,8 @@ namespace ServerWrapperTest
             /*=======================================
             Setup some files related to logs and crap
             =======================================*/
-            Wrapper.WriteLine("Configuring custom logging...");
-            MinecraftServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
+            //Wrapper.WriteLine("Configuring custom logging...");
+            //MinecraftServer.CommandLog = new StreamWriter(RootPath + s.Read("CommandLogFile", "Wrapper"), true);
             Wrapper.WriteLine("Checking for previous unstopped servers...");
             PIDFile = RootPath + s.Read("PIDFile", "Minecraft");
             if (File.Exists(PIDFile))
@@ -286,9 +284,6 @@ namespace ServerWrapperTest
             Wrapper.WriteLine("Starting Minecraft server...");
             MinecraftServer.Process.Start();
 
-            uint[] PID_Array = new uint[8];
-            GetConsoleProcessList(PID_Array, 8);
-
             File.WriteAllText(PIDFile,MinecraftServer.Process.Id.ToString());
 
             //Redirect the input so that the code can send text
@@ -302,70 +297,72 @@ namespace ServerWrapperTest
             while (MinecraftServer.Loaded == false) ;
             Wrapper.WriteLine("Minecraft server loaded!");
 
-            Wrapper.Command("InputMode 1");
-            Wrapper.WriteLine("Use \"wrapper InputMode 0\" to access Wrapper mode.");
-
-            /*=======================================
-            This loop monitors for user input in the console
-            and sends it to the appropriate process
-            =======================================*/
-            string ConsoleInput = "";
             MinecraftServer.Running = true;
-            do
-            {
-                try
-                {
-                    //Get user input
-                    ConsoleInput = Console.In.ReadLine();
+            if (!MinecraftServer.IsBridge) {
+                Wrapper.Command("InputMode 1");
+                Wrapper.WriteLine("Use \"wrapper InputMode 0\" to access Wrapper mode.");
 
-                    //If the user wasn't a squit
-                    if (string.IsNullOrWhiteSpace(ConsoleInput) == false)
+                /*=======================================
+                This loop monitors for user input in the console
+                and sends it to the appropriate process
+                =======================================*/
+                string ConsoleInput = "";
+                do
+                {
+                    try
                     {
-                        switch (Wrapper.InputTarget)
+                        //Get user input
+                        ConsoleInput = Console.In.ReadLine();
+
+                        //If the user wasn't a squit
+                        if (string.IsNullOrWhiteSpace(ConsoleInput) == false)
                         {
-                            //Default to wrapper
-                            case Wrapper.Modes.Menu:
-                                Wrapper.Command(ConsoleInput);
-                                break;
-                            //Default to Minecraft server
-                            case Wrapper.Modes.MinecraftServer:
-                                //Send it to the wrapper if it's a wrapper command
-                                if (ConsoleInput.StartsWith("wrapper"))
-                                {
-                                    Wrapper.Command(ConsoleInput.Remove(0, 7));
-                                }
-                                //If it's a stop command, switch to the stop routine
-                                else if (ConsoleInput == "stop")
-                                {
-                                    MinecraftServer.StopRoutine();
-                                }
-                                else if (ConsoleInput == "stop-no-save")
-                                {
-                                    MinecraftServer.StopRoutine(false);
-                                }
-                                //Send it to the Minecraft server
-                                else
-                                {
-                                    MinecraftServer.Input.WriteLine(ConsoleInput);
-                                }
-                                break;
-                            default:
-                                Wrapper.InputTarget = Wrapper.Modes.Menu;
-                                throw new TrashMonkeyException("Invalid input mode! Defaulting to wrapper mode.");
+                            switch (Wrapper.InputTarget)
+                            {
+                                //Default to wrapper
+                                case Wrapper.Modes.Menu:
+                                    Wrapper.Command(ConsoleInput);
+                                    break;
+                                //Default to Minecraft server
+                                case Wrapper.Modes.MinecraftServer:
+                                    MinecraftServer.ProcessInput(ConsoleInput);
+                                    break;
+                                default:
+                                    Wrapper.InputTarget = Wrapper.Modes.Menu;
+                                    throw new TrashMonkeyException("Invalid input mode! Defaulting to wrapper mode.");
+                            }
                         }
                     }
-                }
-                catch (TrashMonkeyException e)  //Handled errors
-                {
-                    Wrapper.ErrorWriteLine(e.Message);
-                }
-                catch (Exception e)             //Something actually broke errors
-                {
-                    Util.PrintErrorInfo(e);
-                }
-                ConsoleInput = "";
-            } while (MinecraftServer.Running == true) ;
-            //Exiting this loop should return to the menu
+                    catch (TrashMonkeyException e)  //Handled errors
+                    {
+                        Wrapper.ErrorWriteLine(e.Message);
+                    }
+                    catch (Exception e)             //Something actually broke errors
+                    {
+                        Util.PrintErrorInfo(e);
+                    }
+                    ConsoleInput = "";
+                } while (MinecraftServer.Running == true);
+                //Exiting this loop should return to the menu
+            }
+        }
+
+        public static void ProcessInput(string InputText) {
+            //Send it to the wrapper if it's a wrapper command
+            if (InputText.StartsWith("wrapper")) {
+                Wrapper.Command(InputText.Remove(0, 8));
+            }
+            //If it's a stop command, switch to the stop routine
+            else if (InputText == "stop") {
+                MinecraftServer.StopRoutine();
+            }
+            else if (InputText == "stop-no-save") {
+                MinecraftServer.StopRoutine(false);
+            }
+            //Send it to the Minecraft server
+            else {
+                MinecraftServer.Input.WriteLine(InputText);
+            }
         }
 
         /*=======================================
@@ -412,9 +409,11 @@ namespace ServerWrapperTest
             MinecraftServer.Input.WriteLine("stop");
             //Make sure the server process has stopped
             while (MinecraftServer.Process.HasExited == false) ;
-            Wrapper.Mode = Wrapper.Modes.Menu;
+            if (!MinecraftServer.IsBridge) {
+                Wrapper.Mode = Wrapper.Modes.Menu;
+            }
             MinecraftServer.Input = null;
-            MinecraftServer.CommandLog.Close();
+            //MinecraftServer.CommandLog.Close();
             if (File.Exists(PIDFile))
             {
                 File.Delete(PIDFile);

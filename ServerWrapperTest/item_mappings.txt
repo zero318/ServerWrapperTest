@@ -1,0 +1,11 @@
+minecraft:command_block{CustomModelData: 1568, display: {Name: "{\"text\":\"Stone\",\"italic\":false}"}}=stone
+minecraft:command_block{CustomModelData: 1452, display: {Name: "{\"text\":\"Iron Plate\",\"italic\":false}"}}=iron-plate
+minecraft:command_block{CustomModelData: 1564, display: {Name: "{\"text\":\"Steel Plate\",\"italic\":false}"}}=steel-plate
+minecraft:command_block{CustomModelData: 762, display: {Name: "{\"text\":\"Saphirite Ore\",\"italic\":false}"}}=angels-ore1
+minecraft:command_block{CustomModelData: 1450, display: {Name: "{\"text\":\"Iron Gear Wheel\",\"italic\":false}"}}=iron-gear-wheel
+minecraft:command_block{CustomModelData: 1532, display: {Name: "{\"text\":\"Science Pack 3\",\"italic\":false}"}}=science-pack-3
+minecraft:command_block{CustomModelData: 1571, display: {Name: "{\"text\":\"Submachine Gun\",\"italic\":false}"}}=submachine-gun
+minecraft:gold_ore=gold-ore
+minecraft:gold_ingot=gold-plate
+minecraft:iron_ore=iron-ore
+minecraft:iron_ingot=iron-plate
